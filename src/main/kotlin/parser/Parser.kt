@@ -119,7 +119,7 @@ class Parser(private val tokens: KotlinTokensList) {
         if (idx < tokens.size && isSpace(idx))
             idx = skipSpacesToRight(idx)
 
-        // is there inheritance ?
+        // is there inheritance checking
         if (idx < tokens.size && tokens[idx].type == COLON_TOKEN) {
 
             idx = skipAnnotationsIfNecessary(idx + 1)
@@ -136,7 +136,7 @@ class Parser(private val tokens: KotlinTokensList) {
                 idx = skipSpacesToRight(idx)
 
             if (idx < tokens.size && tokens[idx].type == LPAREN_TOKEN) {
-                classBuilder.superClass(userTypePair.first)
+                classBuilder.superClass(resolveClassName(userTypePair.first))
                 while (tokens[idx].type != RPAREN_TOKEN)
                     idx++
                 idx++
@@ -165,7 +165,7 @@ class Parser(private val tokens: KotlinTokensList) {
                     idx = skipSpacesToRight(idx)
 
                 if (idx < tokens.size && tokens[idx].type == LPAREN_TOKEN) {
-                    classBuilder.superClass(userTypePair.first)
+                    classBuilder.superClass(resolveClassName(userTypePair.first))
                     while (tokens[idx].type != RPAREN_TOKEN)
                         idx++
                     idx++
@@ -195,6 +195,13 @@ class Parser(private val tokens: KotlinTokensList) {
         this.classes.add(classBuilder.build())
 
         return tokenAfterClassIdx
+    }
+
+    private fun resolveClassName(className: String): String {
+        return if (pack != Package.defaultPackage())
+            "$pack.$className"
+        else
+            className
     }
 
 

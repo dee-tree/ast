@@ -14,6 +14,9 @@ KotlinClass(
     val overridenMethodsCount: Int
 ) {
 
+    val fullName: String
+    get() = if (pack == Package.defaultPackage()) name else "$pack.$name"
+
     var abc: ABCMetrics = ABCMetrics()
     private set
 
