@@ -1,5 +1,7 @@
+package structures
+
 public const val SEPARATOR = "."
-open class Package(vararg val domain: String) {
+class Package(vararg val domain: String) {
 
     override fun toString(): String {
         return domain.joinToString(separator = SEPARATOR)

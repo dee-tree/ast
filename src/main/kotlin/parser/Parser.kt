@@ -1,7 +1,7 @@
 package parser
 
 import org.jetbrains.kotlin.spec.grammar.tools.KotlinTokensList
-import Package
+import structures.*
 import java.util.*
 
 const val PACKAGE_TOKEN = "PACKAGE"
@@ -43,7 +43,11 @@ const val AT_TOKEN = "AT_PRE_WS"
 
 class Parser(private val tokens: KotlinTokensList) {
 
+    // TODO: Resolve imports
+
     private lateinit var pack: Package
+
+    private var imports = listOf<Import>()
 
     var classes = mutableListOf<KotlinClass>()
     private set
@@ -396,8 +400,8 @@ class Parser(private val tokens: KotlinTokensList) {
     private fun skipSpacesToLeft(idx: Int): Int {
         var mutIdx = idx
         while (mutIdx >= 0 &&
-            tokens[mutIdx].type == WS_TOKEN || tokens[mutIdx].type == NL_TOKEN || tokens[mutIdx].type == SEMICOLON_TOKEN ||
-            tokens[mutIdx].type == INSIDE_WS_TOKEN || tokens[mutIdx].type == INSIDE_NL_TOKEN
+            (tokens[mutIdx].type == WS_TOKEN || tokens[mutIdx].type == NL_TOKEN || tokens[mutIdx].type == SEMICOLON_TOKEN ||
+            tokens[mutIdx].type == INSIDE_WS_TOKEN || tokens[mutIdx].type == INSIDE_NL_TOKEN)
         )
             mutIdx--
 
@@ -410,8 +414,8 @@ class Parser(private val tokens: KotlinTokensList) {
     private fun skipSpacesToRight(idx: Int): Int {
         var mutIdx = idx
         while (mutIdx < tokens.size &&
-            tokens[mutIdx].type == WS_TOKEN || tokens[mutIdx].type == NL_TOKEN || tokens[mutIdx].type == SEMICOLON_TOKEN ||
-            tokens[mutIdx].type == INSIDE_WS_TOKEN || tokens[mutIdx].type == INSIDE_NL_TOKEN
+            (tokens[mutIdx].type == WS_TOKEN || tokens[mutIdx].type == NL_TOKEN || tokens[mutIdx].type == SEMICOLON_TOKEN ||
+            tokens[mutIdx].type == INSIDE_WS_TOKEN || tokens[mutIdx].type == INSIDE_NL_TOKEN)
         )
             mutIdx++
 

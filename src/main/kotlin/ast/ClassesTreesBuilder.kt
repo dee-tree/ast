@@ -1,6 +1,7 @@
 package ast
 
-import parser.KotlinClass
+import structures.KotlinClass
+import structures.FullName
 
 class ClassesTreesBuilder(private var classes: Collection<KotlinClass>) {
 
@@ -38,7 +39,7 @@ class ClassesTreesBuilder(private var classes: Collection<KotlinClass>) {
     private fun isSuperClassInProject(klass: KotlinClass): Boolean {
         classes.forEach {
 
-            if (klass.superClass == it.fullName)
+            if (klass.superClass == it.fullName.toString())
                 return true
         }
         return false
