@@ -1,5 +1,6 @@
 package ast
 
+import structures.FullName
 import structures.KotlinClass
 import java.util.*
 
@@ -15,8 +16,8 @@ class ClassesTree(root: KotlinClass) {
         children.add(child)
     }
 
-    fun find(classFullName: String): ClassesTree? {
-        if (node.fullName.toString() == classFullName)
+    fun find(classFullName: FullName): ClassesTree? {
+        if (node.fullName == classFullName)
             return this
 
         children.forEach { child ->
@@ -35,13 +36,15 @@ class ClassesTree(root: KotlinClass) {
     }
 
     override fun toString(): String {
-        val joiner = StringJoiner("", "[ ", " ]")
+        val joiner = StringJoiner("")
         if (children.isEmpty()) {
             joiner.add(node.fullName.toString())
         }
         else {
             joiner.add("${node.fullName}: ")
-            children.forEach { joiner.add(it.toString()) }
+            joiner.add("[")
+            joiner.add(children.joinToString(separator = ", ") { it.toString() })
+            joiner.add("]")
         }
         return joiner.toString()
     }

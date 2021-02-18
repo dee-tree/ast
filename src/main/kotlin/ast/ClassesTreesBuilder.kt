@@ -1,7 +1,7 @@
 package ast
 
-import structures.KotlinClass
 import structures.FullName
+import structures.KotlinClass
 
 class ClassesTreesBuilder(private var classes: Collection<KotlinClass>) {
 
@@ -23,7 +23,7 @@ class ClassesTreesBuilder(private var classes: Collection<KotlinClass>) {
 
         while (set.isNotEmpty()) {
             set.forEach { klass ->
-                val found = findInTrees(klass.superClass!!, trees)
+                val found = findInTrees(klass.importList.resolveImport(klass.superClass!!, klass.fullName.pack, classes), trees)
 
                 found?.let {
                     it.add(ClassesTree(klass))
@@ -38,20 +38,20 @@ class ClassesTreesBuilder(private var classes: Collection<KotlinClass>) {
 
     private fun isSuperClassInProject(klass: KotlinClass): Boolean {
         classes.forEach {
-
-            if (klass.superClass == it.fullName.toString())
-                return true
+            if (klass.superClass != null &&
+                it.importList.resolveImport(klass.superClass, it.fullName.pack, classes)
+                    .toString() == it.fullName.toString()
+            ) return true
         }
         return false
     }
 
-    private fun findInTrees(classFullName: String, trees: Collection<ClassesTree>): ClassesTree? {
+    private fun findInTrees(classFullName: FullName, trees: Collection<ClassesTree>): ClassesTree? {
         trees.forEach { tree ->
             val found = tree.find(classFullName)
             if (found != null)
                 return found
         }
-
         return null
     }
 }

@@ -3,8 +3,11 @@ package parser
 import org.jetbrains.kotlin.spec.grammar.tools.KotlinTokensList
 import structures.*
 import java.util.*
+import kotlin.coroutines.coroutineContext
 
 const val PACKAGE_TOKEN = "PACKAGE"
+const val IMPORT_TOKEN = "IMPORT"
+const val AS_TOKEN = "AS"
 const val CLASS_TOKEN = "CLASS"
 const val FUN_TOKEN = "FUN"
 const val CONSTRUCTOR_TOKEN = "CONSTRUCTOR"
@@ -28,6 +31,7 @@ const val COLON_TOKEN = "COLON"
 const val DOT_TOKEN = "DOT"
 const val COMMA_TOKEN = "COMMA"
 const val SEMICOLON_TOKEN = "SEMICOLON"
+const val MULT_TOKEN = "MULT"
 
 const val LCURL_TOKEN = "LCURL"
 const val RCURL_TOKEN = "RCURL"
@@ -47,16 +51,17 @@ class Parser(private val tokens: KotlinTokensList) {
 
     private lateinit var pack: Package
 
-    private var imports = listOf<Import>()
+    private var imports = ImportList()
 
     var classes = mutableListOf<KotlinClass>()
     private set
 
     fun parseClasses(): Collection<KotlinClass> {
 
-        var idx = parsePackage(0)
+        parsePackage()
+        parseImports()
 
-        idx = parseNextClass(idx)
+        var idx = parseNextClass(0)
         while (idx != tokens.size) {
             idx = parseNextClass(idx)
         }
@@ -83,7 +88,7 @@ class Parser(private val tokens: KotlinTokensList) {
 
 
         // before "class" may be 3 word
-        val classBuilder = KotlinClass.Builder(tokens[idx].text)
+        val classBuilder = KotlinClass.Builder(className = tokens[idx].text, importList = imports)
         classBuilder.pack(this.pack)
 
         // check 3 words before "class" keyword
@@ -140,7 +145,7 @@ class Parser(private val tokens: KotlinTokensList) {
                 idx = skipSpacesToRight(idx)
 
             if (idx < tokens.size && tokens[idx].type == LPAREN_TOKEN) {
-                classBuilder.superClass(resolveClassName(userTypePair.first))
+                classBuilder.superClass((userTypePair.first))
                 while (tokens[idx].type != RPAREN_TOKEN)
                     idx++
                 idx++
@@ -169,7 +174,7 @@ class Parser(private val tokens: KotlinTokensList) {
                     idx = skipSpacesToRight(idx)
 
                 if (idx < tokens.size && tokens[idx].type == LPAREN_TOKEN) {
-                    classBuilder.superClass(resolveClassName(userTypePair.first))
+                    classBuilder.superClass((userTypePair.first))
                     while (tokens[idx].type != RPAREN_TOKEN)
                         idx++
                     idx++
@@ -201,12 +206,12 @@ class Parser(private val tokens: KotlinTokensList) {
         return tokenAfterClassIdx
     }
 
-    private fun resolveClassName(className: String): String {
-        return if (pack != Package.defaultPackage())
-            "$pack.$className"
-        else
-            className
-    }
+//    private fun resolveClassName(className: String): String {
+//        return if (pack != Package.defaultPackage())
+//            "$pack.$className"
+//        else
+//            className
+//    }
 
 
     /**
@@ -460,11 +465,8 @@ class Parser(private val tokens: KotlinTokensList) {
         return joiner.toString() to idx
     }
 
-    /**
-     * @return idx of the next token after package declaration
-     */
-    private fun parsePackage(from: Int): Int {
-        var idx = from
+    private fun parsePackage() {
+        var idx = 0
         if (isSpace(idx))
             idx = skipSpacesToRight(idx)
 
@@ -472,7 +474,7 @@ class Parser(private val tokens: KotlinTokensList) {
 
         if (tokens[idx].type != PACKAGE_TOKEN) {
             this.pack = Package.defaultPackage()
-            return idx
+            return
         }
 
         idx = skipSpacesToRight(idx + 1)
@@ -496,6 +498,53 @@ class Parser(private val tokens: KotlinTokensList) {
         }
 
         this.pack = packageBuilder.build()
-        return idx
+    }
+
+    private fun parseImports() {
+        var idx = 0
+
+        while (idx < tokens.size && tokens[idx].type != IMPORT_TOKEN)
+            idx++
+
+        // found IMPORT_TOKEN
+        if (idx < tokens.size) {
+
+            do {
+
+                idx = skipSpacesToRight(idx + 1)
+
+                val what = getUserType(idx)
+                idx = what.second
+
+                val domain = what.first.split(".")
+                val import: Import
+//             import all
+                if (what.first.last() == '*') {
+                    import = Import.importAll(Package(*domain.subList(0, domain.size - 1).toTypedArray()))
+                } else {
+                    idx = skipSpacesToRight(idx)
+                    // import x as y
+                    if (tokens[idx].type == AS_TOKEN) {
+                        idx = skipSpacesToRight(idx + 1)
+
+                        val asWhat = getUserType(idx)
+                        idx = asWhat.second
+
+                        import = Import.import(
+                            Package(*domain.subList(0, domain.size - 1).toTypedArray()),
+                            domain.last(),
+                            asWhat.first
+                        )
+                    } else {
+                        // import x
+                        import =
+                            Import.import(Package(*domain.subList(0, domain.size - 1).toTypedArray()), domain.last())
+                    }
+                }
+
+                imports.add(import)
+                idx = skipSpacesToRight(idx)
+            } while (tokens[idx].type == IMPORT_TOKEN)
+        }
     }
 }
