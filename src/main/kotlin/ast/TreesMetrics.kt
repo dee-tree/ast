@@ -27,4 +27,11 @@ class TreesMetrics(private val trees: Collection<ClassesTree>) {
             classesTree.forEachClass { propertiesNum += it.propertiesCount }
             acc + propertiesNum
         }.toDouble() / classesNum).roundToInt()
+
+    val abc: Int
+    get() = (trees.fold(0) {acc, classesTree ->
+        var abc = 0
+        classesTree.forEachClass { abc += it.abc.eval() }
+        acc + abc
+    })
 }

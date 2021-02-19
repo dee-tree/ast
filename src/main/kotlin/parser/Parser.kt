@@ -3,7 +3,6 @@ package parser
 import org.jetbrains.kotlin.spec.grammar.tools.KotlinTokensList
 import structures.*
 import java.util.*
-import kotlin.coroutines.coroutineContext
 
 const val PACKAGE_TOKEN = "PACKAGE"
 const val IMPORT_TOKEN = "IMPORT"
@@ -31,9 +30,9 @@ const val COLON_TOKEN = "COLON"
 const val DOT_TOKEN = "DOT"
 const val COMMA_TOKEN = "COMMA"
 const val SEMICOLON_TOKEN = "SEMICOLON"
-const val MULT_TOKEN = "MULT"
 
 const val LCURL_TOKEN = "LCURL"
+const val LINE_STR_EXPR_START_TOKEN = "LineStrExprStart"
 const val RCURL_TOKEN = "RCURL"
 const val LPAREN_TOKEN = "LPAREN"
 const val RPAREN_TOKEN = "RPAREN"
@@ -43,11 +42,28 @@ const val RANGLE_TOKEN = "RANGLE"
 const val VAR_TOKEN = "VAR"
 const val VAL_TOKEN = "VAL"
 
+const val MULT_ASSIGNMENT_TOKEN = "MULT_ASSIGNMENT"
+const val ADD_ASSIGNMENT_TOKEN = "ADD_ASSIGNMENT"
+const val SUB_ASSIGNMENT_TOKEN = "SUB_ASSIGNMENT"
+const val DIV_ASSIGNMENT_TOKEN = "DIV_ASSIGNMENT"
+const val MOD_ASSIGNMENT_TOKEN = "MOD_ASSIGNMENT"
+const val ASSIGNMENT_TOKEN = "ASSIGNMENT"
+const val EXCL_EQ_TOKEN = "EXCL_EQ"
+const val INCR_TOKEN = "INCR"
+const val DECR_TOKEN = "DECR"
+const val LE_TOKEN = "LE"
+const val GE_TOKEN = "GE"
+const val EQEQ_TOKEN = "EQEQ"
+
+const val IF_TOKEN = "IF"
+const val ELSE_TOKEN = "ELSE"
+const val TRY_TOKEN = "TRY"
+const val CATCH_TOKEN = "CATCH"
+const val EXCL_NO_WS_TOKEN = "EXCL_NO_WS"
+
 const val AT_TOKEN = "AT_PRE_WS"
 
 class Parser(private val tokens: KotlinTokensList) {
-
-    // TODO: Resolve imports
 
     private lateinit var pack: Package
 
@@ -137,7 +153,8 @@ class Parser(private val tokens: KotlinTokensList) {
             idx = userTypePair.second
 
             if (idx == tokens.size) {
-                classes.add(classBuilder.build())
+                val klass = classBuilder.build()
+                this.classes.add(klass)
                 return tokenAfterClassIdx
             }
 
@@ -166,7 +183,8 @@ class Parser(private val tokens: KotlinTokensList) {
                 idx = userTypePair.second
 
                 if (idx == tokens.size) {
-                    classes.add(classBuilder.build())
+                    val klass = classBuilder.build()
+                    this.classes.add(klass)
                     return tokenAfterClassIdx
                 }
 
@@ -187,7 +205,8 @@ class Parser(private val tokens: KotlinTokensList) {
             idx = skipSpacesToRight(idx)
 
         if (idx == tokens.size || idx < tokens.size && tokens[idx].type != LCURL_TOKEN) {
-            this.classes.add(classBuilder.build())
+            val klass = classBuilder.build()
+            this.classes.add(klass)
             return tokenAfterClassIdx
         }
 
@@ -201,17 +220,12 @@ class Parser(private val tokens: KotlinTokensList) {
 
         classBuilder.addProperty(parseProperties(idx + 1))
 
-        this.classes.add(classBuilder.build())
+        val klass = classBuilder.build()
+        parseABC(idx + 1, klass)
+        this.classes.add(klass)
 
         return tokenAfterClassIdx
     }
-
-//    private fun resolveClassName(className: String): String {
-//        return if (pack != Package.defaultPackage())
-//            "$pack.$className"
-//        else
-//            className
-//    }
 
 
     /**
@@ -234,7 +248,7 @@ class Parser(private val tokens: KotlinTokensList) {
                 return overriddenMethodsCount
 
             when (tokens[idx].type) {
-                LCURL_TOKEN -> indent++
+                LCURL_TOKEN, LINE_STR_EXPR_START_TOKEN -> indent++
                 RCURL_TOKEN -> indent--
 
                 OVERRIDE_TOKEN -> {
@@ -271,7 +285,7 @@ class Parser(private val tokens: KotlinTokensList) {
             if (idx >= tokens.size)
                 return propertiesCount
             when (tokens[idx].type) {
-                LCURL_TOKEN -> indent++
+                LCURL_TOKEN, LINE_STR_EXPR_START_TOKEN -> indent++
                 RCURL_TOKEN -> indent--
 
                 VAR_TOKEN, VAL_TOKEN -> {
@@ -545,6 +559,52 @@ class Parser(private val tokens: KotlinTokensList) {
                 imports.add(import)
                 idx = skipSpacesToRight(idx)
             } while (tokens[idx].type == IMPORT_TOKEN)
+        }
+    }
+
+    private fun parseABC(from: Int, kotlinClass: KotlinClass) {
+        var indent = 0
+        var idx = from
+
+        while (idx < tokens.size && indent >= 0) {
+            when (tokens[idx].type) {
+
+                LCURL_TOKEN, LINE_STR_EXPR_START_TOKEN -> indent++
+                RCURL_TOKEN -> indent--
+
+                MULT_ASSIGNMENT_TOKEN,
+                ADD_ASSIGNMENT_TOKEN,
+                SUB_ASSIGNMENT_TOKEN,
+                DIV_ASSIGNMENT_TOKEN,
+                MOD_ASSIGNMENT_TOKEN,
+                ASSIGNMENT_TOKEN,
+                INCR_TOKEN,
+                DECR_TOKEN,
+                -> {
+                    kotlinClass.abc.foundAssignment()
+                }
+
+                LPAREN_TOKEN -> {
+                    if (tokens[skipSpacesToLeft(idx - 1)].type == IDENTIFIER_TOKEN)
+                        kotlinClass.abc.foundBranch()
+                }
+
+                EXCL_EQ_TOKEN,
+                LANGLE_TOKEN,
+                RANGLE_TOKEN,
+                LE_TOKEN,
+                GE_TOKEN,
+                EQEQ_TOKEN, 
+                IF_TOKEN,
+                ELSE_TOKEN,
+                TRY_TOKEN,
+                CATCH_TOKEN,
+                EXCL_NO_WS_TOKEN
+                -> {
+                    kotlinClass.abc.foundCondition()
+                }
+            }
+            idx++
         }
     }
 }

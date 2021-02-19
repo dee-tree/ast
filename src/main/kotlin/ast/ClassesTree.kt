@@ -6,11 +6,9 @@ import java.util.*
 
 class ClassesTree(root: KotlinClass) {
 
-    // TODO: Get metrics
+    private val node: KotlinClass = root
 
-    val node: KotlinClass = root
-
-    val children = mutableListOf<ClassesTree>()
+    private val children = mutableListOf<ClassesTree>()
 
     fun add(child: ClassesTree) {
         children.add(child)
@@ -39,8 +37,7 @@ class ClassesTree(root: KotlinClass) {
         val joiner = StringJoiner("")
         if (children.isEmpty()) {
             joiner.add(node.fullName.toString())
-        }
-        else {
+        } else {
             joiner.add("${node.fullName}: ")
             joiner.add("[")
             joiner.add(children.joinToString(separator = ", ") { it.toString() })

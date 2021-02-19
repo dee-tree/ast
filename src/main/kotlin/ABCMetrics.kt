@@ -1,3 +1,4 @@
+import kotlin.math.roundToInt
 import kotlin.math.sqrt
 
 data class ABCMetrics(
@@ -18,5 +19,5 @@ data class ABCMetrics(
         conditions++
     }
 
-    fun eval() = sqrt((assignments * assignments + branches * branches + conditions * conditions).toDouble())
+    fun eval(): Int = sqrt((assignments * assignments + branches * branches + conditions * conditions).toDouble()).roundToInt()
 }
