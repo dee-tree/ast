@@ -24,3 +24,6 @@ This program calculates the following metrics for *AST* of classes:
   * Assignments
   * Branches
   * Conditions
+
+
+*Analysis* of the program is in the file *Analysis.docx*
