@@ -26,6 +26,8 @@ const val WS_TOKEN = "WS"
 const val INSIDE_WS_TOKEN = "Inside_WS"
 const val NL_TOKEN = "NL"
 const val INSIDE_NL_TOKEN = "Inside_NL"
+const val DELIMITED_COMMENT_TOKEN = "DelimitedComment"
+const val LINE_COMMENT_TOKEN = "LineComment"
 const val COLON_TOKEN = "COLON"
 const val COLONCOLON_TOKEN = "COLONCOLON"
 const val DOT_TOKEN = "DOT"
@@ -64,6 +66,10 @@ const val EXCL_NO_WS_TOKEN = "EXCL_NO_WS"
 
 const val AT_TOKEN = "AT_PRE_WS"
 
+/**
+ * @author Dmitriy Sokolov
+ * Parses classes of the file and general metrics of them from list of tokens: <tt>tokens</tt>
+ */
 class Parser(private val tokens: KotlinTokensList) {
 
     private lateinit var pack: Package
@@ -182,7 +188,6 @@ class Parser(private val tokens: KotlinTokensList) {
 
             if (idx == tokens.size)
                 return tokens.size
-
         } while (tokens[idx].type == COMMA_TOKEN)
         return idx
     }
@@ -202,6 +207,13 @@ class Parser(private val tokens: KotlinTokensList) {
 
         val classBuilder = KotlinClass.Builder(className = tokens[idx].text, importList = imports)
         idx++
+        if (idx == tokens.size) {
+            classes.add(classBuilder.build())
+            return tokens.size
+        } else {
+            if (skipSpacesToRight(idx) == tokens.size)
+                return tokens.size
+        }
         val tokenAfterClassIdx = idx
 
         classBuilder.pack(this.pack)
@@ -402,6 +414,7 @@ class Parser(private val tokens: KotlinTokensList) {
     }
 
     private fun skipSimpleConstructorIfNecessary(from: Int): Int {
+        // kind: (val x: Any, var y: Any...)
         var mutIdx = from
         if (mutIdx < tokens.size && isSpace(mutIdx))
             mutIdx = skipSpacesToRight(mutIdx)
@@ -446,7 +459,9 @@ class Parser(private val tokens: KotlinTokensList) {
         var mutIdx = idx
         while (mutIdx >= 0 &&
             (tokens[mutIdx].type == WS_TOKEN || tokens[mutIdx].type == NL_TOKEN || tokens[mutIdx].type == SEMICOLON_TOKEN ||
-            tokens[mutIdx].type == INSIDE_WS_TOKEN || tokens[mutIdx].type == INSIDE_NL_TOKEN)
+                    tokens[mutIdx].type == INSIDE_WS_TOKEN || tokens[mutIdx].type == INSIDE_NL_TOKEN ||
+                    tokens[mutIdx].type == DELIMITED_COMMENT_TOKEN ||
+                    tokens[mutIdx].type == LINE_COMMENT_TOKEN)
         )
             mutIdx--
 
@@ -460,15 +475,19 @@ class Parser(private val tokens: KotlinTokensList) {
         var mutIdx = idx
         while (mutIdx < tokens.size &&
             (tokens[mutIdx].type == WS_TOKEN || tokens[mutIdx].type == NL_TOKEN || tokens[mutIdx].type == SEMICOLON_TOKEN ||
-            tokens[mutIdx].type == INSIDE_WS_TOKEN || tokens[mutIdx].type == INSIDE_NL_TOKEN)
-        )
+                    tokens[mutIdx].type == INSIDE_WS_TOKEN || tokens[mutIdx].type == INSIDE_NL_TOKEN ||
+                    tokens[mutIdx].type == DELIMITED_COMMENT_TOKEN || tokens[mutIdx].type == LINE_COMMENT_TOKEN)
+        ) {
             mutIdx++
+        }
 
         return mutIdx
     }
 
     private fun isSpace(idx: Int): Boolean = tokens[idx].type == WS_TOKEN || tokens[idx].type == NL_TOKEN ||
-            tokens[idx].type == INSIDE_WS_TOKEN || tokens[idx].type == INSIDE_NL_TOKEN || tokens[idx].type == SEMICOLON_TOKEN
+            tokens[idx].type == INSIDE_WS_TOKEN || tokens[idx].type == INSIDE_NL_TOKEN ||
+            tokens[idx].type == SEMICOLON_TOKEN || tokens[idx].type == DELIMITED_COMMENT_TOKEN ||
+            tokens[idx].type == LINE_COMMENT_TOKEN
 
 
     /**

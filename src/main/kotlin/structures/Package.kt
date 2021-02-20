@@ -1,6 +1,11 @@
 package structures
 
 const val SEPARATOR = "."
+
+/**
+ * @author Dmitriy Sokolov
+ * Representation of project's package
+ */
 class Package(vararg val domain: String) {
 
     fun isParent(supposedChild: Package): Boolean {

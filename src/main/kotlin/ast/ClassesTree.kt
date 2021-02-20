@@ -4,6 +4,10 @@ import structures.FullName
 import structures.KotlinClass
 import java.util.*
 
+/**
+ * @author Dmitriy Sokolov
+ * Tree of project's classes by their inheritance structure
+ */
 class ClassesTree(root: KotlinClass) {
 
     private val node: KotlinClass = root

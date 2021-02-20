@@ -1,5 +1,9 @@
 package structures
 
+/**
+ * @author Dmitriy Sokolov
+ * Representation of file's imports list
+ */
 class ImportList(val imports: MutableCollection<Import> = mutableListOf()) {
 
     fun add(import: Import) {

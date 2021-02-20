@@ -1,9 +1,10 @@
 package structures
 
-import ABCMetrics
-
-data class
-KotlinClass(
+/**
+ * @author Dmitriy Sokolov
+ * Representation of kotlin class
+ */
+data class KotlinClass(
     val fullName: FullName,
     val visibilityMode: VisibilityModifiers,
     val inheritanceMode: InheritanceModifiers,

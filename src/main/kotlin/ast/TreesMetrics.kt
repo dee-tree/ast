@@ -1,8 +1,12 @@
 package ast
 
-import ABCMetrics
+import structures.ABCMetrics
 import kotlin.math.roundToInt
 
+/**
+ * @author Dmitriy Sokolov
+ * Representation of classes' metrics
+ */
 data class TreesMetrics(@Transient private val trees: Collection<ClassesTree>) {
 
     val maxInheritanceDepth: Int = trees.maxOf { it.inheritanceDepth() }

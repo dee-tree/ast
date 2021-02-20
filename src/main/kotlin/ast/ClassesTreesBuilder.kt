@@ -3,6 +3,10 @@ package ast
 import structures.FullName
 import structures.KotlinClass
 
+/**
+ * @author Dmitriy Sokolov
+ * Builds trees of classes and resolves imports
+ */
 class ClassesTreesBuilder(private var classes: Collection<KotlinClass>) {
 
     fun build(): List<ClassesTree> {

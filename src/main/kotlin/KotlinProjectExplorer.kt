@@ -5,6 +5,10 @@ import parser.Parser
 import structures.KotlinClass
 import java.io.File
 
+/**
+ * @author Dmitriy Sokolov
+ * Builds trees of classes by project's structure inheritance in path rootFile
+ */
 class KotlinProjectExplorer(private val rootFile: File) {
 
     init {

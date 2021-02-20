@@ -1,6 +1,12 @@
+package structures
+
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
 
+/**
+ * @author Dmitriy Sokolov
+ * Representation of ABC metrics inside a class
+ */
 class ABCMetrics(
     assignmentsField: Int = 0,
     branchesField: Int = 0,

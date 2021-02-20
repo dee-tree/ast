@@ -1,5 +1,9 @@
 package structures
 
+/**
+ * @author Dmitriy Sokolov
+ * Representation of a import
+ */
 class Import private constructor(val from: Package, val what: String?, val like: String?) {
 
     companion object {
