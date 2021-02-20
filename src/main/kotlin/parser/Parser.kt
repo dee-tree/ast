@@ -27,6 +27,7 @@ const val INSIDE_WS_TOKEN = "Inside_WS"
 const val NL_TOKEN = "NL"
 const val INSIDE_NL_TOKEN = "Inside_NL"
 const val COLON_TOKEN = "COLON"
+const val COLONCOLON_TOKEN = "COLONCOLON"
 const val DOT_TOKEN = "DOT"
 const val COMMA_TOKEN = "COMMA"
 const val SEMICOLON_TOKEN = "SEMICOLON"
@@ -84,55 +85,131 @@ class Parser(private val tokens: KotlinTokensList) {
         return classes
     }
 
+    /**
+     * @param idx is index of 'class' keyword
+     * @return true if 'class' keyword is met in callable reference, not in class declaration
+     */
+    private fun isCallableReference(idx: Int): Boolean {
+        if (idx > 0) {
+            if (isSpace(idx - 1)) {
+                val beforeSpaces = skipSpacesToLeft(idx - 1)
+                return if (beforeSpaces > 0) tokens[beforeSpaces].type == COLONCOLON_TOKEN else false
+            } else {
+                return tokens[idx - 1].type == COLONCOLON_TOKEN
+            }
+        }
+        return false
+    }
+
+    /**
+     * @return index of the "class" keyword in declaration
+     */
+    private fun findClassDeclaration(from: Int): Int {
+        var idx = from - 1
+        do {
+            idx++
+            while (idx < tokens.size && tokens[idx].type != CLASS_TOKEN)
+                idx++
+
+            if (idx >= tokens.size)
+                return tokens.size  // class not found
+
+        } while (isCallableReference(idx))
+
+        return idx
+    }
+
+    /**
+     * @param from index of 'class' keyword
+     * @param builder builder, where write modifiers
+     */
+    private fun parseClassModifiers(from: Int, builder: KotlinClass.Builder) {
+        var idx = skipSpacesToLeft(from - 1)
+
+        // check 3 words before "class" keyword
+        for (x in 1..3) {
+            if (idx < 0)
+                break
+
+            when (tokens[idx].type) {
+                FINAL_TOKEN -> builder.inheritanceMode(InheritanceModifiers.FINAL)
+                OPEN_TOKEN -> builder.inheritanceMode(InheritanceModifiers.OPEN)
+                ABSTRACT_TOKEN -> builder.inheritanceMode(InheritanceModifiers.ABSTRACT)
+
+                PRIVATE_TOKEN -> builder.visibilityMode(VisibilityModifiers.PRIVATE)
+                PROTECTED_TOKEN -> builder.visibilityMode(VisibilityModifiers.PROTECTED)
+                INTERNAL_TOKEN -> builder.visibilityMode(VisibilityModifiers.INTERNAL)
+                PUBLIC_TOKEN -> builder.visibilityMode(VisibilityModifiers.PUBLIC)
+            }
+
+            if (idx == 0)
+                break
+            idx = skipSpacesToLeft(idx - 1)
+        }
+    }
+
+    /**
+     * @param from is index of the first word in superclass/interfaces
+     * @param builder class builder where superclass should be written
+     * @return index of the next token
+     */
+    private fun parseSuperClass(from: Int, builder: KotlinClass.Builder): Int {
+        var idx = from - 1
+        do {
+            idx++
+
+            if (isSpace(idx))
+                idx = skipSpacesToRight(idx)
+
+            idx = skipAnnotationsIfNecessary(idx)
+
+            val userTypePair = getUserType(idx)
+            idx = userTypePair.second
+
+            if (idx == tokens.size) {
+                return idx
+            }
+
+            if (isSpace(idx))
+                idx = skipSpacesToRight(idx)
+
+            if (idx < tokens.size && tokens[idx].type == LPAREN_TOKEN) {
+                builder.superClass((userTypePair.first))
+                while (tokens[idx].type != RPAREN_TOKEN)
+                    idx++
+                idx++
+            }
+
+            if (idx == tokens.size)
+                return tokens.size
+
+        } while (tokens[idx].type == COMMA_TOKEN)
+        return idx
+    }
 
     /**
      * @return the index of the next token after "class" keywords or token.size in case of lack of class
      */
     private fun parseNextClass(from: Int): Int {
         var idx = from
-        while (idx < tokens.size && tokens[idx].type != CLASS_TOKEN)
-            idx++
 
-        // found class declaration
+        idx = findClassDeclaration(idx)
+
         if (idx >= tokens.size)
             return tokens.size  // class not found
 
-        val tokenAfterClassIdx = idx + 1
-
-        var leftIdx = skipSpacesToLeft(idx - 1)
         idx = skipSpacesToRight(idx + 1)
 
-
-        // before "class" may be 3 word
         val classBuilder = KotlinClass.Builder(className = tokens[idx].text, importList = imports)
+        idx++
+        val tokenAfterClassIdx = idx
+
         classBuilder.pack(this.pack)
 
-        // check 3 words before "class" keyword
-        for (x in 1..3) {
-            if (leftIdx < 0)
-                break
-
-            when (tokens[leftIdx].type) {
-                FINAL_TOKEN -> classBuilder.inheritanceMode(InheritanceModifiers.FINAL)
-                OPEN_TOKEN -> classBuilder.inheritanceMode(InheritanceModifiers.OPEN)
-                ABSTRACT_TOKEN -> classBuilder.inheritanceMode(InheritanceModifiers.ABSTRACT)
-
-                PRIVATE_TOKEN -> classBuilder.visibilityMode(VisibilityModifiers.PRIVATE)
-                PROTECTED_TOKEN -> classBuilder.visibilityMode(VisibilityModifiers.PROTECTED)
-                INTERNAL_TOKEN -> classBuilder.visibilityMode(VisibilityModifiers.INTERNAL)
-                PUBLIC_TOKEN -> classBuilder.visibilityMode(VisibilityModifiers.PUBLIC)
-            }
-
-            if (leftIdx == 0)
-                break
-            leftIdx = skipSpacesToLeft(leftIdx - 1)
-        }
-
-        idx++
+        parseClassModifiers(tokenAfterClassIdx - 1, classBuilder)
 
         if (isSpace(idx))
             idx = skipSpacesToRight(idx)
-
 
         idx = skipTypeModifierIfNecessary(idx)
         idx = skipConstructorPartBeforeArgumentsIfNecessary(idx)
@@ -146,59 +223,8 @@ class Parser(private val tokens: KotlinTokensList) {
 
         // is there inheritance checking
         if (idx < tokens.size && tokens[idx].type == COLON_TOKEN) {
-
-            idx = skipAnnotationsIfNecessary(idx + 1)
-
-            var userTypePair = getUserType(idx)
-            idx = userTypePair.second
-
-            if (idx == tokens.size) {
-                val klass = classBuilder.build()
-                this.classes.add(klass)
-                return tokenAfterClassIdx
-            }
-
-            if (isSpace(idx))
-                idx = skipSpacesToRight(idx)
-
-            if (idx < tokens.size && tokens[idx].type == LPAREN_TOKEN) {
-                classBuilder.superClass((userTypePair.first))
-                while (tokens[idx].type != RPAREN_TOKEN)
-                    idx++
-                idx++
-            }
-
-            if (idx < tokens.size && isSpace(idx))
-                idx = skipSpacesToRight(idx)
-
-            while (idx < tokens.size && tokens[idx].type == COMMA_TOKEN) {
-                idx++
-
-                if (isSpace(idx))
-                    idx = skipSpacesToRight(idx)
-
-                idx = skipAnnotationsIfNecessary(idx)
-
-                userTypePair = getUserType(idx)
-                idx = userTypePair.second
-
-                if (idx == tokens.size) {
-                    val klass = classBuilder.build()
-                    this.classes.add(klass)
-                    return tokenAfterClassIdx
-                }
-
-                if (isSpace(idx))
-                    idx = skipSpacesToRight(idx)
-
-                if (idx < tokens.size && tokens[idx].type == LPAREN_TOKEN) {
-                    classBuilder.superClass((userTypePair.first))
-                    while (tokens[idx].type != RPAREN_TOKEN)
-                        idx++
-                    idx++
-                }
-            }
-
+            idx = skipSpacesToRight(idx + 1)
+            idx = parseSuperClass(idx, classBuilder)
         }
 
         if (idx < tokens.size && isSpace(idx))

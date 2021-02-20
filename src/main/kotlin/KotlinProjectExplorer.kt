@@ -20,9 +20,13 @@ class KotlinProjectExplorer(private val rootFile: File) {
             if (kotlinFile.extension == "kt") {
                 val tokenized = tokenizeKotlinCode(kotlinFile.readText())
 
-                val parser = Parser(tokenized)
+//                if (kotlinFile.nameWithoutExtension == "You") {
+//                tokenized.forEach { println("token: $it") }
 
-                classes.addAll(parser.parseClasses())
+                    val parser = Parser(tokenized)
+
+                    classes.addAll(parser.parseClasses())
+//                }
             }
         }
 

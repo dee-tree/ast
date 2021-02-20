@@ -1,37 +1,40 @@
 package ast
 
+import ABCMetrics
 import kotlin.math.roundToInt
 
-class TreesMetrics(private val trees: Collection<ClassesTree>) {
+data class TreesMetrics(@Transient private val trees: Collection<ClassesTree>) {
 
-    val maxInheritanceDepth: Int
-        get() = trees.maxOf { it.inheritanceDepth() }
+    val maxInheritanceDepth: Int = trees.maxOf { it.inheritanceDepth() }
 
-    val meanInheritanceDepth: Int
-        get() = (trees.fold(0) {acc, classesTree -> acc + classesTree.inheritanceDepth() }.toDouble() / trees.size).roundToInt()
+    val meanInheritanceDepth: Int = (trees.fold(0) { acc, classesTree -> acc + classesTree.inheritanceDepth() }
+        .toDouble() / trees.size).roundToInt()
 
-    private val classesNum: Int
-        get() = trees.fold(0) { acc, classesTree -> acc + classesTree.classesNum() }
+    @Transient
+    private val classesNum: Int = trees.fold(0) { acc, classesTree -> acc + classesTree.classesNum() }
 
-    val meanOverriddenMethodNum: Int
-        get() =
-            (trees.fold(0) { acc, classesTree ->
-                var overriddenMethodsNum = 0
-                classesTree.forEachClass { overriddenMethodsNum += it.overriddenMethodsCount }
-                acc + overriddenMethodsNum
-            }.toDouble() / classesNum).roundToInt()
-
-    val meanPropertiesNum: Int
-        get() = (trees.fold(0) { acc, classesTree ->
-            var propertiesNum = 0
-            classesTree.forEachClass { propertiesNum += it.propertiesCount }
-            acc + propertiesNum
+    val meanOverriddenMethodNum: Int =
+        (trees.fold(0) { acc, classesTree ->
+            var overriddenMethodsNum = 0
+            classesTree.forEachClass { overriddenMethodsNum += it.overriddenMethodsCount }
+            acc + overriddenMethodsNum
         }.toDouble() / classesNum).roundToInt()
 
-    val abc: Int
-    get() = (trees.fold(0) {acc, classesTree ->
-        var abc = 0
-        classesTree.forEachClass { abc += it.abc.eval() }
+    val meanPropertiesNum: Int = (trees.fold(0) { acc, classesTree ->
+        var propertiesNum = 0
+        classesTree.forEachClass { propertiesNum += it.propertiesCount }
+        acc + propertiesNum
+    }.toDouble() / classesNum).roundToInt()
+
+//    val abc: Int = (trees.fold(0) { acc, classesTree ->
+//        var abc = 0
+//        classesTree.forEachClass { abc += it.abc.eval() }
+//        acc + abc
+//    })
+
+    val abc: ABCMetrics = (trees.fold(ABCMetrics()) { acc, classesTree ->
+        var abc = ABCMetrics()
+        classesTree.forEachClass { abc += it.abc }
         acc + abc
     })
 }

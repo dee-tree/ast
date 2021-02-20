@@ -1,11 +1,28 @@
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
 
-data class ABCMetrics(
-    var assignments: Int = 0,
-    var branches: Int = 0,
-    var conditions: Int = 0
+class ABCMetrics(
+    assignmentsField: Int = 0,
+    branchesField: Int = 0,
+    conditionsField: Int = 0
 ) {
+    var assignments = assignmentsField
+        private set
+
+    var branches = branchesField
+        private set
+
+    var conditions = conditionsField
+        private set
+
+
+    val scalar get() = sqrt((assignments * assignments + branches * branches + conditions * conditions).toDouble()).roundToInt()
+
+    operator fun plus(other: ABCMetrics): ABCMetrics = ABCMetrics(
+        assignments + other.assignments,
+        branches + other.branches,
+        conditions + other.conditions
+    )
 
     fun foundAssignment() {
         assignments++
@@ -18,6 +35,4 @@ data class ABCMetrics(
     fun foundCondition() {
         conditions++
     }
-
-    fun eval(): Int = sqrt((assignments * assignments + branches * branches + conditions * conditions).toDouble()).roundToInt()
 }
