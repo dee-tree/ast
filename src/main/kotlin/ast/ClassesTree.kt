@@ -33,6 +33,19 @@ class ClassesTree(root: KotlinClass) {
         return children.maxOf { it.inheritanceDepth() + 1 }
     }
 
+
+    fun toStringAsTree(indent: Int = 0): String {
+        val joiner = StringJoiner("")
+        joiner.add("\t".repeat(indent))
+        if (children.isEmpty()) {
+            joiner.add(node.fullName.toString())
+        } else {
+            joiner.add("${node.fullName}: ")
+            joiner.add(children.joinToString(separator = "\n", prefix = "\n") { it.toStringAsTree(indent + 1) })
+        }
+        return joiner.toString()
+    }
+
     override fun toString(): String {
         val joiner = StringJoiner("")
         if (children.isEmpty()) {

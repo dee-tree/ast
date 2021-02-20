@@ -19,14 +19,9 @@ class KotlinProjectExplorer(private val rootFile: File) {
         rootFile.walkTopDown().forEach { kotlinFile ->
             if (kotlinFile.extension == "kt") {
                 val tokenized = tokenizeKotlinCode(kotlinFile.readText())
+                val parser = Parser(tokenized)
 
-//                if (kotlinFile.nameWithoutExtension == "You") {
-//                tokenized.forEach { println("token: $it") }
-
-                    val parser = Parser(tokenized)
-
-                    classes.addAll(parser.parseClasses())
-//                }
+                classes.addAll(parser.parseClasses())
             }
         }
 

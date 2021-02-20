@@ -26,15 +26,20 @@ data class TreesMetrics(@Transient private val trees: Collection<ClassesTree>) {
         acc + propertiesNum
     }.toDouble() / classesNum).roundToInt()
 
-//    val abc: Int = (trees.fold(0) { acc, classesTree ->
-//        var abc = 0
-//        classesTree.forEachClass { abc += it.abc.eval() }
-//        acc + abc
-//    })
-
     val abc: ABCMetrics = (trees.fold(ABCMetrics()) { acc, classesTree ->
         var abc = ABCMetrics()
         classesTree.forEachClass { abc += it.abc }
         acc + abc
     })
+
+    override fun toString(): String =
+        "Metrics of chosen project:\n" +
+                " Max classes inheritance depth: $maxInheritanceDepth\n" +
+                " Mean classes inheritance depth: $meanInheritanceDepth\n" +
+                " Mean classes' properties number: $meanPropertiesNum\n" +
+                " Mean classes' overridden methods number: $meanOverriddenMethodNum\n" +
+                " ABC metrics:\n" +
+                "\t Assignments: ${abc.assignments}\n" +
+                "\t Branches: ${abc.branches}\n" +
+                "\t Conditions: ${abc.conditions}\n"
 }
